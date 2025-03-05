@@ -1,0 +1,93 @@
+Skip to main content
+
+Gemini API
+
+Sign in
+
+Gemini API
+Gemini 2.0 Flash is now production ready! Learn more
+Home
+Gemini API
+Models
+Was this helpful?
+
+Send feedback
+Gemini 2.0 Flash Thinking
+
+The Gemini 2.0 Flash Thinking model is an experimental model that's trained to generate the "thinking process" the model goes through as part of its response. As a result, the Flash Thinking model is capable of stronger reasoning capabilities in its responses than the Gemini 2.0 Flash Experimental model.
+
+Try the latest Flash Thinking model in Google AI Studio
+Use thinking models
+Flash Thinking models are available in Google AI Studio and through the Gemini API.
+
+The Gemini API doesn't return thoughts in the response.
+
+Note: We have set up gemini-2.0-flash-thinking-exp as an alias to the latest Flash Thinking model. Use this alias to get the latest Flash thinking model, or specify the full model name.
+To use the thinking model you need to set your client to use the v1alpha version of the API:
+
+
+pip install -U google-genai
+
+from google import genai
+from google.genai import types
+
+client = genai.Client(
+    api_key=GOOGLE_API_KEY,
+
+    http_options={'api_version':'v1alpha'},
+)
+Send a basic request
+Python
+This example uses the new Google Genai SDK.
+
+
+from google import genai
+
+client = genai.Client(api_key='GEMINI_API_KEY', http_options={'api_version':'v1alpha'})
+
+response = client.models.generate_content(
+    model='gemini-2.0-flash-thinking-exp',
+    contents='Explain how RLHF works in simple terms.',
+)
+
+print(response.text)
+Multi-turn thinking conversations
+During multi-turn conversations, you pass the entire conversation history as input, so the model has no access to its previous thoughts in a multi-turn conversation.
+
+Python
+The new Google Genai SDK provides the ability to create a multi-turn chat session which is helpful to manage the state of a conversation.
+
+
+from google import genai
+
+client = genai.Client(api_key='GEMINI_API_KEY', http_options={'api_version':'v1alpha'})
+
+chat = client.aio.chats.create(
+    model='gemini-2.0-flash-thinking-exp',
+)
+response = await chat.send_message('What is your name?')
+print(response.text)
+response = await chat.send_message('What did you just say before this?')
+print(response.text)
+Limitations
+The Flash Thinking model is an experimental model and has the following limitations:
+
+Text and image input only
+Text only output
+No JSON mode or Search Grounding
+Thoughts are only shown in Google AI Studio
+What's next?
+Try the Flash Thinking model in Google AI Studio.
+Try the Flash Thinking Colab.
+Was this helpful?
+
+Send feedback
+Except as otherwise noted, the content of this page is licensed under the Creative Commons Attribution 4.0 License, and code samples are licensed under the Apache 2.0 License. For details, see the Google Developers Site Policies. Java is a registered trademark of Oracle and/or its affiliates.
+
+Last updated 2025-02-05 UTC.
+
+Terms
+Privacy
+
+English
+The new page has loaded..
