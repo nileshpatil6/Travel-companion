@@ -2,11 +2,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { type Plan } from "@shared/schema";
 import { z } from "zod";
 
-if (!process.env.GEMINI_API_KEY) {
-  throw new Error("GEMINI_API_KEY environment variable is required");
-}
-
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const genAI = new GoogleGenerativeAI("AIzaSyACuSIis8DfUIn3XmfhJq0YBPVw30S9H_Y");
 
 function generatePrompt(fromLocation: string, location: string, startDate: Date, duration: number): string {
   return `Create a detailed ${duration}-day travel itinerary from ${fromLocation} to ${location} starting on ${startDate.toLocaleDateString()}. Include:
