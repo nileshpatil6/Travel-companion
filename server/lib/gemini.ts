@@ -1,5 +1,4 @@
-  }
-}import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import { type Plan } from "@shared/schema";
 import { z } from "zod";
 
@@ -109,5 +108,4 @@ console.error("Error generating itinerary:", error);
 throw new Error("Failed to generate itinerary. Please try again later.");
 }
 }
-
 
