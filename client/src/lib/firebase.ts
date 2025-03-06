@@ -10,6 +10,12 @@ import {
   type User
 } from "firebase/auth";
 
+// Load environment variables (Only needed for local development)
+if (process.env.NODE_ENV !== "production") {
+  require("dotenv").config();
+}
+
+// Firebase config using env variables
 const firebaseConfig = {
   apiKey: process.env.FIREBASE_API_KEY,
   authDomain: process.env.FIREBASE_AUTH_DOMAIN,
@@ -19,11 +25,7 @@ const firebaseConfig = {
   appId: process.env.FIREBASE_APP_ID
 };
 
-if (!firebaseConfig.apiKey) {
-  throw new Error("Missing Firebase API Key! Check your environment variables.");
-}
-
-// Initialize Firebase
+// Initialize Firebase  
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const googleProvider = new GoogleAuthProvider();
