@@ -1,7 +1,7 @@
 import { initializeApp } from "firebase/app";
-import { 
-  getAuth, 
-  signInWithPopup, 
+import {
+  getAuth,
+  signInWithPopup,
   GoogleAuthProvider,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
@@ -11,13 +11,17 @@ import {
 } from "firebase/auth";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyAuFfaMbVRfn4-2Hl6NL4kR26HNWNDfD2Q",
-  authDomain: "my-first-projec-81124.firebaseapp.com",
-  projectId: "my-first-projec-81124",
-  storageBucket: "my-first-projec-81124.firebasestorage.app",
-  messagingSenderId: "822704538734",
-  appId: "1:822704538734:web:8acb22a361e3a9ac60927f"
+  apiKey: process.env.FIREBASE_API_KEY,
+  authDomain: process.env.FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.FIREBASE_PROJECT_ID,
+  storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.FIREBASE_APP_ID
 };
+
+if (!firebaseConfig.apiKey) {
+  throw new Error("Missing Firebase API Key! Check your environment variables.");
+}
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
