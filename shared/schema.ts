@@ -62,7 +62,8 @@ export const searchSchema = z.object({
   location: z.string().min(1, "Destination is required"),
   fromLocation: z.string().min(1, "Origin location is required"),
   startDate: z.coerce.date(),
-  duration: z.number().min(1).max(14)
+  duration: z.number().min(1).max(14),
+  transportationMode: z.enum(["car", "train", "bus", "flight", "bike"]).default("car")
 });
 
 export type SearchParams = z.infer<typeof searchSchema>;

@@ -4,14 +4,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { CalendarIcon, MapPin, Navigation } from "lucide-react";
-import { format } from "date-fns";
+import { CalendarIcon, MapPin, Navigation, Car, Train, Bus, Plane, Bike } from "lucide-react";
+import { format, isBefore, startOfDay } from "date-fns";
 import { type SearchParams } from "@shared/schema";
 import TripDuration from "./trip-duration";
 import { motion } from "framer-motion";
 import { useAuth } from "@/contexts/auth-context";
 import AuthDialog from "./auth-dialog";
+import LocationInput from "./location-input";
 
 interface SearchFormProps {
   onSearch: (params: SearchParams) => void;
@@ -25,7 +27,8 @@ export default function SearchForm({ onSearch, isLoading = false }: SearchFormPr
     location: "",
     fromLocation: "",
     startDate: new Date(),
-    duration: 3
+    duration: 3,
+    transportationMode: "car"
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -37,6 +40,8 @@ export default function SearchForm({ onSearch, isLoading = false }: SearchFormPr
     onSearch(searchParams);
   };
 
+  const today = startOfDay(new Date());
+
   return (
     <>
       <form onSubmit={handleSubmit} className="space-y-8 p-8 rounded-xl">
@@ -46,43 +51,69 @@ export default function SearchForm({ onSearch, isLoading = false }: SearchFormPr
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.4 }}
-            className="space-y-3"
           >
-            <Label htmlFor="fromLocation" className="text-lg flex items-center gap-2">
-              <Navigation className="h-4 w-4" />
-              Where are you traveling from?
-            </Label>
-            <Input
-              id="fromLocation"
-              placeholder="Enter your current location..."
+            <LocationInput
               value={searchParams.fromLocation}
-              onChange={(e) => setSearchParams({ ...searchParams, fromLocation: e.target.value })}
-              className="h-12 bg-white/50 backdrop-blur-sm border-primary/20 focus:border-primary/50 transition-colors"
+              onChange={(value) => setSearchParams({ ...searchParams, fromLocation: value })}
+              label="Where are you traveling from?"
+              placeholder="Enter your current location..."
             />
           </motion.div>
 
           {/* To Location */}
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.4, delay: 0.1 }}
-            className="space-y-3"
           >
-            <Label htmlFor="location" className="text-lg flex items-center gap-2">
-              <MapPin className="h-4 w-4" />
-              Where would you like to go?
-            </Label>
-            <Input
-              id="location"
-              placeholder="Enter your dream destination..."
+            <LocationInput
               value={searchParams.location}
-              onChange={(e) => setSearchParams({ ...searchParams, location: e.target.value })}
-              className="h-12 bg-white/50 backdrop-blur-sm border-primary/20 focus:border-primary/50 transition-colors"
+              onChange={(value) => setSearchParams({ ...searchParams, location: value })}
+              label="Where would you like to go?"
+              placeholder="Enter your dream destination..."
             />
           </motion.div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          {/* Transportation Mode */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.2 }}
+            className="space-y-3"
+          >
+            <Label className="text-lg flex items-center gap-2">
+              <Navigation className="h-4 w-4" />
+              How would you like to travel?
+            </Label>
+            <Select
+              value={searchParams.transportationMode}
+              onValueChange={(value) => setSearchParams({ ...searchParams, transportationMode: value as SearchParams["transportationMode"] })}
+            >
+              <SelectTrigger className="h-12 bg-white/50 backdrop-blur-sm border-primary/20 hover:border-primary/50 transition-colors">
+                <SelectValue placeholder="Select transportation mode" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="car" className="flex items-center gap-2">
+                  <Car className="h-4 w-4" /> Car
+                </SelectItem>
+                <SelectItem value="train" className="flex items-center gap-2">
+                  <Train className="h-4 w-4" /> Train
+                </SelectItem>
+                <SelectItem value="bus" className="flex items-center gap-2">
+                  <Bus className="h-4 w-4" /> Bus
+                </SelectItem>
+                <SelectItem value="flight" className="flex items-center gap-2">
+                  <Plane className="h-4 w-4" /> Flight
+                </SelectItem>
+                <SelectItem value="bike" className="flex items-center gap-2">
+                  <Bike className="h-4 w-4" /> Bike
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </motion.div>
+
           {/* Date Picker */}
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
@@ -117,24 +148,25 @@ export default function SearchForm({ onSearch, isLoading = false }: SearchFormPr
                   selected={searchParams.startDate}
                   onSelect={(date) => date && setSearchParams({ ...searchParams, startDate: date })}
                   initialFocus
+                  disabled={(date) => isBefore(date, today)}
                   className="rounded-lg border border-primary/20"
                 />
               </PopoverContent>
             </Popover>
           </motion.div>
-
-          {/* Duration Slider */}
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, delay: 0.3 }}
-          >
-            <TripDuration
-              value={searchParams.duration}
-              onChange={(duration) => setSearchParams({ ...searchParams, duration })}
-            />
-          </motion.div>
         </div>
+
+        {/* Duration Slider */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.3 }}
+        >
+          <TripDuration
+            value={searchParams.duration}
+            onChange={(duration) => setSearchParams({ ...searchParams, duration })}
+          />
+        </motion.div>
 
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -152,9 +184,9 @@ export default function SearchForm({ onSearch, isLoading = false }: SearchFormPr
                 Creating Your Perfect Trip...
               </span>
             ) : user ? (
-              "Plan My Adventure"
+              "Plan My Trip"
             ) : (
-              "Sign In to Plan Your Adventure"
+              "Sign In to Plan Your Trip"
             )}
           </Button>
         </motion.div>

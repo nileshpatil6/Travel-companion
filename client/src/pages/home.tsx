@@ -201,7 +201,7 @@ export default function Home() {
         </div>
       </div>
 
-      <style jsx global>{`
+      <style>{`
         @keyframes float {
           0% { transform: translateY(0px); }
           50% { transform: translateY(-20px); }

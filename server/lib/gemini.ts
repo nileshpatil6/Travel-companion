@@ -4,14 +4,15 @@ import { z } from "zod";
 
 const genAI = new GoogleGenerativeAI("AIzaSyACuSIis8DfUIn3XmfhJq0YBPVw30S9H_Y");
 
-function generatePrompt(fromLocation: string, location: string, startDate: Date, duration: number): string {
-  return `Create a detailed ${duration}-day travel itinerary from ${fromLocation} to ${location} starting on ${startDate.toLocaleDateString()}. Include:
+function generatePrompt(fromLocation: string, location: string, startDate: Date, duration: number, transportationMode: string): string {
+  return `Create a detailed ${duration}-day travel itinerary from ${fromLocation} to ${location} starting on ${startDate.toLocaleDateString()}, with ${transportationMode} as the primary mode of transportation. Include:
 
 1. A day-by-day schedule with:
    - Activities and attractions with time slots
    - Location details
    - Estimated costs
    - Booking information when available
+   - Transportation details between locations using ${transportationMode}
 
 2. Accommodation suggestions with:
    - Hotel/lodging names
@@ -20,9 +21,11 @@ function generatePrompt(fromLocation: string, location: string, startDate: Date,
    - Booking links if possible
 
 3. Additional information:
-   - Total estimated cost
+   - Total estimated cost (including ${transportationMode} expenses)
    - Best time to visit
-   - Travel tips
+   - Travel tips specific to ${transportationMode} travel
+   - Estimated travel time between locations using ${transportationMode}
+
 4. Just make plan for the destination not for the start location, ignore the start location its just for user nothing to do for us with it , but ensure to calculate the distance between the start and the destination location , and the prices should be In INDIAN Rupees ₹
 Format the response as a structured JSON object. Example structure:
 {
@@ -63,7 +66,7 @@ export async function generateItinerary(
   try {
     const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-thinking-exp-01-21" });
 
-    const prompt = generatePrompt(fromLocation, location, startDate, duration);
+    const prompt = generatePrompt(fromLocation, location, startDate, duration, "car");
 
     const result = await model.generateContent(prompt);
     const response = await result.response;
