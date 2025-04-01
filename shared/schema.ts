@@ -6,14 +6,14 @@ import { z } from "zod";
 const activitySchema = z.object({
   time: z.string(),
   activity: z.string(),
-  location: z.string(),
-  estimatedCost: z.string(),
+  location: z.string().optional(), // Location might not always be applicable
+  estimatedCost: z.string().optional(), // Cost might not always be available/relevant
   notes: z.string().optional(),
   bookingInfo: z.object({
-    availability: z.string(),
-    price: z.string(),
+    availability: z.string().optional(), // Make booking details optional
+    price: z.string().optional(),
     bookingUrl: z.string().optional()
-  }).optional()
+  }).optional().nullable() // Allow null as well
 });
 
 const dailyPlanSchema = z.object({
@@ -23,14 +23,14 @@ const dailyPlanSchema = z.object({
 
 export const planSchema = z.object({
   dailyPlans: z.array(dailyPlanSchema),
-  estimatedTotalCost: z.string(),
-  bestTimeToVisit: z.string(),
-  travelTips: z.array(z.string()),
+  estimatedTotalCost: z.string().optional(), // Make optional
+  bestTimeToVisit: z.string().optional(), // Make optional
+  travelTips: z.array(z.string()).optional(), // Make optional
   accommodation: z.array(z.object({
     name: z.string(),
     type: z.string(),
-    priceRange: z.string(),
-    availability: z.string(),
+    priceRange: z.string().optional(), // Make optional
+    availability: z.string().optional(), // Make optional
     rating: z.string().optional(),
     bookingUrl: z.string().optional()
   })).optional()
@@ -61,9 +61,9 @@ export type Activity = z.infer<typeof activitySchema>;
 export const searchSchema = z.object({
   location: z.string().min(1, "Destination is required"),
   fromLocation: z.string().min(1, "Origin location is required"),
-  startDate: z.coerce.date(),
+  startDate: z.coerce.date({ required_error: "Start date is required" }), // Add required error
   duration: z.number().min(1).max(14),
-  transportationMode: z.enum(["car", "train", "bus", "flight", "bike"]).default("car")
+  budget: z.number().positive("Budget must be a positive number").optional(), // Add optional budget
 });
 
 export type SearchParams = z.infer<typeof searchSchema>;

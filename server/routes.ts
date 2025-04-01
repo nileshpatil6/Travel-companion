@@ -13,7 +13,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         validatedData.fromLocation,
         validatedData.location,
         validatedData.startDate,
-        validatedData.duration
+        validatedData.duration,
+        validatedData.budget // Pass the budget
       );
 
       const shareId = nanoid(10);

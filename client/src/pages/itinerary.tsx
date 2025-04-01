@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useParams } from "wouter";
 import { type Itinerary } from "@shared/schema";
-import LoadingState from "@/components/loading-state";
+import { Loader2 } from "lucide-react"; // Import Loader2 directly
 import ItineraryContent from "@/components/itinerary-card"; // Import the refactored content component
 import DestinationImages from "@/components/DestinationImages";
 import { motion } from "framer-motion";
@@ -47,7 +47,13 @@ export default function ItineraryPage() {
 
 
   if (isLoading) {
-    return <LoadingState />;
+    // Use a
+    // ine loader here instead of the enhanced LoadingState
+    return (
+      <div className="flex items-center justify-center p-16 min-h-screen">
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+      </div>
+    );
   }
 
   if (!itinerary) {

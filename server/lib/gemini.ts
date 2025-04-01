@@ -3,9 +3,16 @@ import { type Plan } from "@shared/schema";
 import { z } from "zod";
 
 const genAI = new GoogleGenerativeAI("AIzaSyACuSIis8DfUIn3XmfhJq0YBPVw30S9H_Y");
+function generatePrompt(
+  fromLocation: string,
+  location: string,
+  startDate: Date,
+  duration: number,
+  budget?: number // Add optional budget parameter
+): string {
+  const budgetConstraint = budget ? ` The total estimated cost for activities, accommodation, and local transport should strictly adhere to a budget of ₹${budget}. Ensure recommendations are within this limit.` : "";
+  return `Create a detailed ${duration}-day travel itinerary from ${fromLocation} to ${location} starting on ${startDate.toLocaleDateString()}. ${budgetConstraint} Include:
 
-function generatePrompt(fromLocation: string, location: string, startDate: Date, duration: number): string {
-  return `Create a detailed ${duration}-day travel itinerary from ${fromLocation} to ${location} starting on ${startDate.toLocaleDateString()}. Include:
 
 1. A day-by-day schedule with:
    - Activities and attractions with time slots
@@ -60,12 +67,14 @@ export async function generateItinerary(
   fromLocation: string,
   location: string,
   startDate: Date,
-  duration: number
+  duration: number,
+  budget?: number // Add optional budget parameter
 ): Promise<Plan> {
   try {
     const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
-    const prompt = generatePrompt(fromLocation, location, startDate, duration);
+    // Pass budget to prompt generator
+    const prompt = generatePrompt(fromLocation, location, startDate, duration, budget);
 
     const result = await model.generateContent(prompt);
     const response = await result.response;

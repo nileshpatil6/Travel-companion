@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { CalendarIcon, MapPin } from "lucide-react";
-import { format, isBefore, startOfDay } from "date-fns";
+import { format, isBefore, startOfDay } from "date-fns"; // Keep date-fns
 import { type SearchParams } from "@shared/schema";
 import TripDuration from "./trip-duration";
 import { motion } from "framer-motion";
@@ -27,7 +27,8 @@ export default function SearchForm({ onSearch, isLoading = false, disabled = fal
     location: "",
     fromLocation: "",
     startDate: new Date(),
-    duration: 3
+    duration: 3,
+    budget: undefined // Initialize budget as undefined (optional)
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -77,6 +78,7 @@ export default function SearchForm({ onSearch, isLoading = false, disabled = fal
           </motion.div>
         </div>
 
+        {/* Date Picker & Budget Input Row */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {/* Date Picker */}
           <motion.div 
@@ -119,13 +121,33 @@ export default function SearchForm({ onSearch, isLoading = false, disabled = fal
               </PopoverContent>
             </Popover>
           </motion.div>
+          {/* Budget Input */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.25 }} // Adjust delay slightly
+            className="space-y-3"
+          >
+            <Label htmlFor="budget" className="text-lg">Budget (Optional, in ₹)</Label>
+            <Input
+              id="budget"
+              type="number"
+              placeholder="e.g., 50000"
+              value={searchParams.budget ?? ''} // Handle undefined for input value
+              onChange={(e) => setSearchParams({ ...searchParams, budget: e.target.value ? Number(e.target.value) : undefined })}
+              min="0"
+              className="h-12 bg-white/50 backdrop-blur-sm border-primary/20 hover:border-primary/50 transition-colors"
+              disabled={disabled}
+            />
+          </motion.div>
         </div>
 
-        {/* Duration Slider */}
+        {/* Duration Slider Row (Spanning full width on desktop) */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, delay: 0.3 }}
+          className="md:col-span-2" // Make slider span 2 columns on md+
         >
           <TripDuration
             value={searchParams.duration}
@@ -133,7 +155,6 @@ export default function SearchForm({ onSearch, isLoading = false, disabled = fal
             disabled={disabled} // Disable slider
           />
         </motion.div>
-
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
