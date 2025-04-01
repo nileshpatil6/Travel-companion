@@ -1,11 +1,12 @@
 
-import { useState } from "react";
+import { useState } from "react"; // Keep useState
 import { useLocation } from "wouter";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { type SearchParams } from "@shared/schema";
 import SearchForm from "@/components/search-form";
+import LoadingState from "@/components/loading-state"; // Import the new loading state
 import { MapPinned, Calendar, Clock, Plane, Globe, Compass, Hotel, Camera } from "lucide-react";
 import { useAuth } from "@/contexts/auth-context";
 import { motion } from "framer-motion";
@@ -70,6 +71,7 @@ export default function Home() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const { user } = useAuth(); // Get user from auth context
+  const [loadingDestination, setLoadingDestination] = useState<string | null>(null); // State for destination during loading
 
   const generateMutation = useMutation({
     mutationFn: async (data: SearchParams) => {
@@ -83,12 +85,14 @@ export default function Home() {
       toast({
         title: "Error",
         description: error.message || "Failed to generate itinerary",
-        variant: "destructive"
+        variant: "destructive",
       });
+      setLoadingDestination(null); // Clear destination on error
     }
   });
 
   const handleSearch = (searchParams: SearchParams) => {
+    setLoadingDestination(searchParams.location); // Store destination when search starts
     generateMutation.mutate(searchParams);
   };
 
@@ -121,13 +125,17 @@ export default function Home() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.2 }}
-            className="max-w-4xl mx-auto backdrop-blur-lg bg-white/80 rounded-2xl shadow-xl p-1"
+            className="max-w-4xl mx-auto" // Remove padding/bg from wrapper
           >
-            <SearchForm
-              onSearch={handleSearch}
-              isLoading={generateMutation.isPending}
-              disabled={generateMutation.isSuccess} // Pass the success state
-            />
+            {generateMutation.isPending && loadingDestination ? (
+              // Show LoadingState when pending and destination is set
+              <LoadingState destination={loadingDestination} />
+            ) : (
+              // Show SearchForm otherwise
+              <div className="backdrop-blur-lg bg-white/80 rounded-2xl shadow-xl p-1"> {/* Apply styling here */}
+                 <SearchForm onSearch={handleSearch} isLoading={false} disabled={false} /> {/* Don't pass loading/disabled here */}
+              </div>
+            )}
           </motion.div>
         </div>
       </div>
