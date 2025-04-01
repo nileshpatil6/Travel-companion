@@ -4,15 +4,14 @@ import { z } from "zod";
 
 const genAI = new GoogleGenerativeAI("AIzaSyACuSIis8DfUIn3XmfhJq0YBPVw30S9H_Y");
 
-function generatePrompt(fromLocation: string, location: string, startDate: Date, duration: number, transportationMode: string): string {
-  return `Create a detailed ${duration}-day travel itinerary from ${fromLocation} to ${location} starting on ${startDate.toLocaleDateString()}, with ${transportationMode} as the primary mode of transportation. Include:
+function generatePrompt(fromLocation: string, location: string, startDate: Date, duration: number): string {
+  return `Create a detailed ${duration}-day travel itinerary from ${fromLocation} to ${location} starting on ${startDate.toLocaleDateString()}. Include:
 
 1. A day-by-day schedule with:
    - Activities and attractions with time slots
    - Location details
    - Estimated costs
    - Booking information when available
-   - Transportation details between locations using ${transportationMode}
 
 2. Accommodation suggestions with:
    - Hotel/lodging names
@@ -21,10 +20,10 @@ function generatePrompt(fromLocation: string, location: string, startDate: Date,
    - Booking links if possible
 
 3. Additional information:
-   - Total estimated cost (including ${transportationMode} expenses)
+   - Total estimated cost
    - Best time to visit
-   - Travel tips specific to ${transportationMode} travel
-   - Estimated travel time between locations using ${transportationMode}
+   - Travel tips
+   - Estimated travel time between locations
 
 4. Just make plan for the destination not for the start location, ignore the start location its just for user nothing to do for us with it , but ensure to calculate the distance between the start and the destination location , and the prices should be In INDIAN Rupees ₹
 Format the response as a structured JSON object. Example structure:
@@ -64,9 +63,9 @@ export async function generateItinerary(
   duration: number
 ): Promise<Plan> {
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-thinking-exp-01-21" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
-    const prompt = generatePrompt(fromLocation, location, startDate, duration, "car");
+    const prompt = generatePrompt(fromLocation, location, startDate, duration);
 
     const result = await model.generateContent(prompt);
     const response = await result.response;
@@ -84,5 +83,26 @@ export async function generateItinerary(
   } catch (error) {
     console.error("Error generating itinerary:", error);
     throw new Error("Failed to generate itinerary. Please try again later.");
+  }
+}
+// --- Function to generate details for a specific place ---
+export async function generatePlaceDetails(placeQuery: string): Promise<string> {
+  try {
+    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+
+    // Simple prompt for concise details
+    const prompt = `Provide a concise description (around 50-100 words) for the place: "${placeQuery}". Focus on key highlights, significance, or what visitors can expect. Respond with only the description text, no extra formatting.`;
+
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const text = response.text();
+
+    // Basic cleanup (optional, Gemini might return clean text)
+    const cleanedText = text.trim();
+
+    return cleanedText;
+  } catch (error) {
+    console.error(`Error generating details for "${placeQuery}":`, error);
+    throw new Error(`Failed to get details for ${placeQuery}.`);
   }
 }

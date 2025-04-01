@@ -6,9 +6,10 @@ import { motion } from "framer-motion";
 interface TripDurationProps {
   value: number;
   onChange: (value: number) => void;
+  disabled?: boolean; // Add disabled prop
 }
 
-export default function TripDuration({ value, onChange }: TripDurationProps) {
+export default function TripDuration({ value, onChange, disabled = false }: TripDurationProps) {
   return (
     <div className="space-y-3">
       <Label className="text-lg flex items-center gap-2">
@@ -27,6 +28,7 @@ export default function TripDuration({ value, onChange }: TripDurationProps) {
           max={14}
           step={1}
           className="py-4"
+          disabled={disabled} // Pass disabled prop
         />
         <div className="flex justify-between text-xs text-muted-foreground">
           <span>1 day</span>

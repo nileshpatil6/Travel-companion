@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useLocation } from "wouter";
 import { useMutation } from "@tanstack/react-query";
@@ -6,6 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { type SearchParams } from "@shared/schema";
 import SearchForm from "@/components/search-form";
 import { MapPinned, Calendar, Clock, Plane, Globe, Compass, Hotel, Camera } from "lucide-react";
+import { useAuth } from "@/contexts/auth-context";
 import { motion } from "framer-motion";
 
 // SVG Background component
@@ -67,6 +69,7 @@ const TravelIllustrations = () => (
 export default function Home() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
+  const { user } = useAuth(); // Get user from auth context
 
   const generateMutation = useMutation({
     mutationFn: async (data: SearchParams) => {
@@ -120,86 +123,94 @@ export default function Home() {
             transition={{ duration: 0.6, delay: 0.2 }}
             className="max-w-4xl mx-auto backdrop-blur-lg bg-white/80 rounded-2xl shadow-xl p-1"
           >
-            <SearchForm onSearch={handleSearch} isLoading={generateMutation.isPending} />
+            <SearchForm
+              onSearch={handleSearch}
+              isLoading={generateMutation.isPending}
+              disabled={generateMutation.isSuccess} // Pass the success state
+            />
           </motion.div>
         </div>
       </div>
 
       {/* Features Section */}
-      <div className="py-24 bg-gradient-to-b from-blue-50 to-background relative">
-        <div className="container mx-auto px-4">
-          <motion.h2 
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            transition={{ duration: 0.6 }}
-            className="text-4xl font-bold text-center mb-16 bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent"
-          >
-            Plan Your Dream Trip  
-          </motion.h2>
+      {!user && ( // Conditionally render if user is not logged in
+        <div className="py-24 bg-gradient-to-b from-blue-50 to-background relative">
+          <div className="container mx-auto px-4">
+            <motion.h2
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
+              transition={{ duration: 0.6 }}
+              className="text-4xl font-bold text-center mb-16 bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent"
+            >
+              Plan Your Dream Trip
+            </motion.h2>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            <FeatureCard
-              icon={<Globe className="h-8 w-8" />}
-              title="Smart Destinations"
-              description="Discover hidden gems and popular spots tailored to your interests."
-              delay={0}
-            />
-            <FeatureCard
-              icon={<Hotel className="h-8 w-8" />}
-              title="Real-time Availability"
-              description="Get up-to-date accommodation options with instant booking."
-              delay={0.2}
-            />
-            <FeatureCard
-              icon={<Compass className="h-8 w-8" />}
-              title="Optimized Routes"
-              description="Make the most of your time with efficiently planned schedules."
-              delay={0.4}
-            />
-            <FeatureCard
-              icon={<Camera className="h-8 w-8" />}
-              title="Local Experiences"
-              description="Immerse yourself in authentic local activities and culture."
-              delay={0.6}
-            />
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+              <FeatureCard
+                icon={<Globe className="h-8 w-8" />}
+                title="Smart Destinations"
+                description="Discover hidden gems and popular spots tailored to your interests."
+                delay={0}
+              />
+              <FeatureCard
+                icon={<Hotel className="h-8 w-8" />}
+                title="Real-time Availability"
+                description="Get up-to-date accommodation options with instant booking."
+                delay={0.2}
+              />
+              <FeatureCard
+                icon={<Compass className="h-8 w-8" />}
+                title="Optimized Routes"
+                description="Make the most of your time with efficiently planned schedules."
+                delay={0.4}
+              />
+              <FeatureCard
+                icon={<Camera className="h-8 w-8" />}
+                title="Local Experiences"
+                description="Immerse yourself in authentic local activities and culture."
+                delay={0.6}
+              />
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* How It Works Section */}
-      <div className="py-24 bg-gradient-to-b from-background to-blue-50 relative">
-        <div className="container mx-auto px-4">
-          <motion.h2 
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            transition={{ duration: 0.6 }}
-            className="text-4xl font-bold text-center mb-16"
-          >
-            How It Works
-          </motion.h2>
+      {!user && ( // Conditionally render if user is not logged in
+        <div className="py-24 bg-gradient-to-b from-background to-blue-50 relative">
+          <div className="container mx-auto px-4">
+            <motion.h2
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
+              transition={{ duration: 0.6 }}
+              className="text-4xl font-bold text-center mb-16"
+            >
+              How It Works
+            </motion.h2>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
-            <StepCard
-              number="1"
-              title="Enter Your Destination"
-              description="Tell us where you want to go and for how long."
-              delay={0}
-            />
-            <StepCard
-              number="2"
-              title="Creates Your Plan"
-              description="Our system generates a personalized itinerary just for you."
-              delay={0.2}
-            />
-            <StepCard
-              number="3"
-              title="Start Your Adventure"
-              description="Book your accommodations and activities instantly."
-              delay={0.4}
-            />
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
+              <StepCard
+                number="1"
+                title="Enter Your Destination"
+                description="Tell us where you want to go and for how long."
+                delay={0}
+              />
+              <StepCard
+                number="2"
+                title="Creates Your Plan"
+                description="Our system generates a personalized itinerary just for you."
+                delay={0.2}
+              />
+              <StepCard
+                number="3"
+                title="Start Your Adventure"
+                description="Book your accommodations and activities instantly."
+                delay={0.4}
+              />
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       <style>{`
         @keyframes float {

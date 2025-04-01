@@ -4,9 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { CalendarIcon, MapPin, Navigation, Car, Train, Bus, Plane, Bike } from "lucide-react";
+import { CalendarIcon, MapPin } from "lucide-react";
 import { format, isBefore, startOfDay } from "date-fns";
 import { type SearchParams } from "@shared/schema";
 import TripDuration from "./trip-duration";
@@ -18,17 +17,17 @@ import LocationInput from "./location-input";
 interface SearchFormProps {
   onSearch: (params: SearchParams) => void;
   isLoading?: boolean;
+  disabled?: boolean; // Add disabled prop
 }
 
-export default function SearchForm({ onSearch, isLoading = false }: SearchFormProps) {
+export default function SearchForm({ onSearch, isLoading = false, disabled = false }: SearchFormProps) {
   const { user } = useAuth();
   const [showAuthDialog, setShowAuthDialog] = useState(false);
   const [searchParams, setSearchParams] = useState<SearchParams>({
     location: "",
     fromLocation: "",
     startDate: new Date(),
-    duration: 3,
-    transportationMode: "car"
+    duration: 3
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -57,6 +56,7 @@ export default function SearchForm({ onSearch, isLoading = false }: SearchFormPr
               onChange={(value) => setSearchParams({ ...searchParams, fromLocation: value })}
               label="Where are you traveling from?"
               placeholder="Enter your current location..."
+              disabled={disabled} // Disable input
             />
           </motion.div>
 
@@ -71,49 +71,13 @@ export default function SearchForm({ onSearch, isLoading = false }: SearchFormPr
               onChange={(value) => setSearchParams({ ...searchParams, location: value })}
               label="Where would you like to go?"
               placeholder="Enter your dream destination..."
+              hideAutoLocateButton={true} // Hide button for destination
+              disabled={disabled} // Disable input
             />
           </motion.div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {/* Transportation Mode */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, delay: 0.2 }}
-            className="space-y-3"
-          >
-            <Label className="text-lg flex items-center gap-2">
-              <Navigation className="h-4 w-4" />
-              How would you like to travel?
-            </Label>
-            <Select
-              value={searchParams.transportationMode}
-              onValueChange={(value) => setSearchParams({ ...searchParams, transportationMode: value as SearchParams["transportationMode"] })}
-            >
-              <SelectTrigger className="h-12 bg-white/50 backdrop-blur-sm border-primary/20 hover:border-primary/50 transition-colors">
-                <SelectValue placeholder="Select transportation mode" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="car" className="flex items-center gap-2">
-                  <Car className="h-4 w-4" /> Car
-                </SelectItem>
-                <SelectItem value="train" className="flex items-center gap-2">
-                  <Train className="h-4 w-4" /> Train
-                </SelectItem>
-                <SelectItem value="bus" className="flex items-center gap-2">
-                  <Bus className="h-4 w-4" /> Bus
-                </SelectItem>
-                <SelectItem value="flight" className="flex items-center gap-2">
-                  <Plane className="h-4 w-4" /> Flight
-                </SelectItem>
-                <SelectItem value="bike" className="flex items-center gap-2">
-                  <Bike className="h-4 w-4" /> Bike
-                </SelectItem>
-              </SelectContent>
-            </Select>
-          </motion.div>
-
           {/* Date Picker */}
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
@@ -133,6 +97,7 @@ export default function SearchForm({ onSearch, isLoading = false }: SearchFormPr
                     "w-full h-12 justify-start text-left font-normal bg-white/50 backdrop-blur-sm border-primary/20 hover:border-primary/50 transition-colors",
                     !searchParams.startDate && "text-muted-foreground"
                   )}
+                  disabled={disabled} // Disable button
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
                   {searchParams.startDate ? (
@@ -165,6 +130,7 @@ export default function SearchForm({ onSearch, isLoading = false }: SearchFormPr
           <TripDuration
             value={searchParams.duration}
             onChange={(duration) => setSearchParams({ ...searchParams, duration })}
+            disabled={disabled} // Disable slider
           />
         </motion.div>
 
@@ -176,7 +142,7 @@ export default function SearchForm({ onSearch, isLoading = false }: SearchFormPr
           <Button
             type="submit"
             className="w-full h-14 text-lg bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-600/90 transition-all duration-300 shadow-lg hover:shadow-xl"
-            disabled={!searchParams.location || !searchParams.fromLocation || isLoading}
+            disabled={!searchParams.location || !searchParams.fromLocation || isLoading || disabled} // Update disabled condition
           >
             {isLoading ? (
               <span className="flex items-center gap-2">

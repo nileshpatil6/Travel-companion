@@ -1,192 +1,343 @@
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
-// Keep Accordion imports from the second block
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { useState } from "react"; // Import useState
 import { type Itinerary, type Activity } from "@shared/schema";
-import { Share, Bed, MapPin, Calendar, Clock, Info, ChevronRight } from "lucide-react";
+import { Bed, MapPin, Calendar, Clock, Info, ChevronRight, DollarSign, CalendarDays, Lightbulb, ChevronDown } from "lucide-react"; // Added ChevronDown
+import { Loader2 } from "lucide-react"; // For loading state
 import ReactMarkdown from "react-markdown";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"; // Added more Card parts
+import { Separator } from "@/components/ui/separator"; // For visual separation
+import { Button } from "@/components/ui/button"; // For Know More button
+import { Dialog, DialogTrigger, DialogContent } from "@/components/ui/dialog"; // For image modal
+import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible"; // Import Collapsible components
+import ActivityImage from "./ActivityImage"; // Import the new image component
 
-interface ItineraryCardProps {
-  itinerary: Itinerary;
+// Define interfaces for props of potential sub-components
+interface AccommodationSectionProps {
+  accommodation: Itinerary['plan']['accommodation'];
 }
 
-export default function ItineraryCard({ itinerary }: ItineraryCardProps) {
-  const handleShare = () => {
-    // Simple feedback mechanism (optional)
-    const shareButton = document.getElementById("share-button");
-    if (shareButton) {
-        shareButton.title = "Link copied!";
-        setTimeout(() => {
-            shareButton.title = "Copy share link";
-        }, 2000);
+interface DailyPlanSectionProps {
+  dailyPlans: Itinerary['plan']['dailyPlans'];
+}
+
+interface TravelTipsSectionProps {
+  travelTips: Itinerary['plan']['travelTips'];
+  estimatedCost: Itinerary['plan']['estimatedTotalCost'];
+  bestTime: Itinerary['plan']['bestTimeToVisit'];
+}
+
+// --- Accommodation Section Component ---
+function AccommodationSection({ accommodation }: AccommodationSectionProps) {
+  if (!accommodation || accommodation.length === 0) return null;
+
+  return (
+    <section id="accommodation" className="scroll-mt-24">
+      {/* Use CardHeader style for consistency */}
+      <div className="flex items-center gap-3 mb-4">
+         <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-primary/50 bg-primary/10 text-primary">
+            <Bed className="h-5 w-5" />
+         </span>
+         <h2 className="text-xl font-bold text-foreground">Accommodation</h2>
+      </div>
+      <div className="grid gap-4 sm:grid-cols-2">
+        {accommodation.map((place, index) => (
+          <Card key={index} className="bg-card shadow-sm hover:shadow-md transition-shadow duration-200">
+             <CardHeader className="pb-2">
+                <CardTitle className="text-lg">{place.name}</CardTitle>
+             </CardHeader>
+            <CardContent className="text-sm space-y-1 pt-0">
+              <p className="text-muted-foreground"><span className="font-medium text-foreground">Type:</span> {place.type}</p>
+              <p className="text-muted-foreground"><span className="font-medium text-foreground">Price:</span> {place.priceRange}</p>
+              <p className="text-muted-foreground"><span className="font-medium text-foreground">Availability:</span> {place.availability}</p>
+              {place.rating && (
+                <p className="text-muted-foreground"><span className="font-medium text-foreground">Rating:</span> {place.rating}</p>
+              )}
+              {/* {place.bookingUrl && ( // Remove Book Now button
+                <a
+                  href={place.bookingUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 mt-3 px-3 py-1.5 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors text-xs font-medium"
+                >
+                  Book Now
+                  <ChevronRight className="h-3 w-3" />
+                </a>
+              )} */}
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+// --- Activity Card Component ---
+function ActivityCard({ activity }: { activity: Activity }) {
+  // State for "Know More" feature
+  const [knowMoreLoading, setKnowMoreLoading] = useState(false);
+  const [knowMoreData, setKnowMoreData] = useState<string | null>(null);
+  const [knowMoreError, setKnowMoreError] = useState<string | null>(null);
+  // Note: Dialog manages its own open state via trigger/content interaction
+
+  const handleKnowMoreClick = async () => {
+    // Combine activity name and location for a better query
+    const query = `${activity.activity}${activity.location ? `, ${activity.location}` : ''}`;
+    
+    setKnowMoreLoading(true);
+    setKnowMoreData(null);
+    setKnowMoreError(null);
+
+    try {
+      const response = await fetch('/api/place-details', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ placeQuery: query }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data = await response.json();
+      setKnowMoreData(data.details);
+    } catch (error) {
+      console.error("Error fetching place details:", error);
+      setKnowMoreError(error instanceof Error ? error.message : "Failed to load details.");
+    } finally {
+      setKnowMoreLoading(false);
     }
-    navigator.clipboard.writeText(window.location.href);
   };
 
-  // Use styling from the FIRST block
-  return (
-    <Card className="max-w-4xl mx-auto">
-      {/* Header Styling from FIRST block */}
-      <CardHeader className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-primary/5 p-4 sm:p-6">
-        <div>
-          <h2 className="text-2xl sm:text-3xl font-bold text-primary">{itinerary.location}</h2>
-          <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-muted-foreground mt-2 text-sm sm:text-base">
-            <MapPin className="h-4 w-4 sm:h-5 sm:w-5" />
-            <p>From: {itinerary.fromLocation}</p>
-            <Calendar className="h-4 w-4 sm:h-5 sm:w-5 ml-2 sm:ml-4" />
-            <p>{new Date(itinerary.startDate).toLocaleDateString()}</p>
-          </div>
-          <p className="text-sm sm:text-base text-muted-foreground mt-2">
-            {itinerary.duration} day itinerary
-          </p>
-        </div>
-        <button
-          id="share-button" // Added an ID for potential JS interaction
-          onClick={handleShare}
-          className="p-2 hover:bg-accent rounded-full transition-colors"
-          title="Copy share link"
-        >
-          <Share className="h-5 w-5 sm:h-6 sm:w-6" />
-        </button>
-      </CardHeader>
-      {/* Content Styling from FIRST block (adjust padding if needed due to header bg) */}
-      <CardContent className="p-4 sm:p-6 space-y-6"> {/* Added pt-6 for padding below header */}
 
-        {/* Accommodation Section - Styling from FIRST block */}
-        {itinerary.plan.accommodation && (
-          <div className="bg-accent/5 p-4 sm:p-6 rounded-lg">
-            <h3 className="text-xl sm:text-2xl font-bold mb-4 flex items-center gap-2 text-primary">
-              <Bed className="h-5 w-5 sm:h-6 sm:w-6" />
-              Recommended Accommodations
-            </h3>
-            <div className="grid gap-4">
-              {itinerary.plan.accommodation.map((place, index) => (
-                <div key={index} className="bg-white p-3 sm:p-4 rounded-lg shadow-sm border hover:shadow-md transition-shadow">
-                  <h4 className="text-lg sm:text-xl font-semibold">{place.name}</h4>
-                  {/* Grid and text styling from FIRST block */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 mt-2 text-sm sm:text-base"> {/* Adjusted grid for responsiveness */}
-                    <p><span className="font-medium">Type:</span> {place.type}</p>
-                    <p><span className="font-medium">Price:</span> {place.priceRange}</p>
-                    <p><span className="font-medium">Availability:</span> {place.availability}</p>
-                    {place.rating && (
-                      <p><span className="font-medium">Rating:</span> {place.rating}</p>
-                    )}
-                  </div>
-                  {/* Button styling from FIRST block */}
-                  {place.bookingUrl && (
-                    <a
-                      href={place.bookingUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 mt-3 px-3 py-1.5 sm:px-4 sm:py-2 bg-primary text-white rounded-md hover:bg-primary/90 transition-colors text-sm font-medium" // Ensured button style consistency
-                    >
-                      Book Now
-                      <ChevronRight className="h-4 w-4" />
-                    </a>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
+  return (
+    // Removed border-l, using timeline dot instead
+    <Card className="overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-200">
+      {/* Apply flex row layout on medium screens and up, keep vertical spacing for mobile. Reverse row for md+ and center items vertically */}
+      <CardContent className="p-4 space-y-3 md:space-y-0 md:flex md:flex-row-reverse md:items-center md:gap-4">
+        {/* Image Section (only renders if location exists and image is found) */}
+        {activity.location && (
+          // Wrapper for image to control size and prevent shrinking on desktop
+          <Dialog>
+            <DialogTrigger asChild>
+              <div className="w-full md:w-40 md:flex-shrink-0 lg:w-48 cursor-pointer">
+                <ActivityImage locationQuery={activity.location} />
+              </div>
+            </DialogTrigger>
+            <DialogContent className="max-w-3xl p-2">
+              <ActivityImage locationQuery={activity.location} /> {/* Render image again in modal */}
+            </DialogContent>
+          </Dialog>
         )}
 
-        {/* Daily Plans - Use Accordion Structure from SECOND block, styled like FIRST block's sections */}
-        <div className="space-y-4 sm:space-y-6">
-          <h3 className="text-xl sm:text-2xl font-bold text-primary mb-4">Daily Itinerary</h3>
-          {/* Use Accordion component but style items/triggers/content to match FIRST block's day sections */}
-          <Accordion type="single" collapsible className="space-y-4">
-            {itinerary.plan.dailyPlans.map((day, index) => (
-              // Apply outer styling of a day section (bg, padding, rounded) to the item wrapper
-              <div key={index} className="bg-accent/5 p-3 sm:p-4 rounded-lg"> {/* Adjusted padding slightly for accordion */}
-                <AccordionItem value={`day-${index + 1}`} className="border-b-0">
-                  {/* Style Trigger like the Day heading in the FIRST block */}
-                  <AccordionTrigger className="text-lg sm:text-xl font-bold text-primary hover:no-underline py-2 px-2"> {/* Added padding to trigger */}
-                      Day {day.day}
-                  </AccordionTrigger>
-                  <AccordionContent className="pt-4 px-2"> {/* Added padding to content */}
-                    {/* Style activity container and activities like FIRST block */}
-                    <div className="space-y-3">
-                      {day.activities.map((activity: Activity, actIndex) => (
-                        <div key={actIndex} className="bg-white p-3 sm:p-4 rounded-lg shadow-sm border-l-4 border-primary hover:shadow-md transition-shadow">
-                          <div className="flex items-center gap-2 text-primary">
-                            <Clock className="h-4 w-4" />
-                            <p className="font-semibold">{activity.time}</p>
-                          </div>
-                          <p className="text-base sm:text-lg mt-1">{activity.activity}</p>
-                          <div className="flex items-center gap-2 mt-2 text-sm sm:text-base text-muted-foreground">
-                            <MapPin className="h-4 w-4" />
-                            <p>{activity.location}</p>
-                          </div>
-                          <p className="text-sm sm:text-base font-medium mt-2">
-                            Est. Cost: <span className="text-primary">{activity.estimatedCost}</span>
-                          </p>
-                          {/* Notes styling from FIRST block */}
-                          {activity.notes && (
-                            <div className="mt-2 bg-accent/10 p-2 rounded text-sm sm:text-base prose prose-sm max-w-none">
-                              <ReactMarkdown>{activity.notes}</ReactMarkdown>
-                            </div>
-                          )}
-                          {/* Booking Info styling from FIRST block */}
-                          {activity.bookingInfo && (
-                            <div className="mt-3 p-3 bg-accent/10 rounded text-sm sm:text-base space-y-1"> {/* Added space-y-1 */}
-                              <p><span className="font-medium">Availability:</span> {activity.bookingInfo.availability}</p>
-                              <p><span className="font-medium">Price:</span> {activity.bookingInfo.price}</p>
-                              {activity.bookingInfo.bookingUrl && (
-                                <a
-                                  href={activity.bookingInfo.bookingUrl}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="inline-flex items-center gap-1 mt-2 px-3 py-1.5 sm:px-4 sm:py-2 bg-primary text-white rounded-md hover:bg-primary/90 transition-colors text-sm font-medium" // Ensured button style consistency
-                                >
-                                  Book Activity
-                                  <ChevronRight className="h-4 w-4" />
-                                </a>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </AccordionContent>
-                </AccordionItem>
-              </div>
-            ))}
-          </Accordion>
+        {/* Wrapper for all text content to allow it to grow and maintain vertical spacing */}
+        <div className="flex-grow space-y-3">
+
+        {/* Top Row: Time & Cost */}
+        <div className="flex justify-between items-center text-sm">
+          <div className="flex items-center gap-2 font-semibold text-primary">
+            <Clock className="h-4 w-4" />
+            <span>{activity.time}</span>
+          </div>
+          {activity.estimatedCost && (
+             <div className="flex items-center gap-1 text-muted-foreground font-medium">
+               {/* <DollarSign className="h-4 w-4" /> REMOVED */}
+               <span>{activity.estimatedCost}</span>
+             </div>
+          )}
         </div>
 
-        {/* Bottom Info Section (Cost, Time, Tips) - Styling from FIRST block */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-          <div className="bg-accent/5 p-4 sm:p-6 rounded-lg">
-            <h3 className="text-lg sm:text-xl font-bold text-primary mb-3 flex items-center gap-2">
-              <Info className="h-5 w-5" />
-              Estimated Total Cost
-            </h3>
-            <p className="text-base sm:text-lg">{itinerary.plan.estimatedTotalCost}</p>
-          </div>
+        {/* Main Info: Title & Location */}
+        <div>
+           <h4 className="text-lg font-semibold text-foreground mb-1">{activity.activity}</h4>
+           {activity.location && (
+             <div className="flex items-center gap-2 text-sm text-muted-foreground">
+               <MapPin className="h-4 w-4 flex-shrink-0" />
+               <span>{activity.location}</span>
+             </div>
+           )}
+        </div>
 
-          <div className="bg-accent/5 p-4 sm:p-6 rounded-lg">
-            <h3 className="text-lg sm:text-xl font-bold text-primary mb-3 flex items-center gap-2">
-              <Calendar className="h-5 w-5" />
-              Best Time to Visit
-            </h3>
-            <p className="text-base sm:text-lg">{itinerary.plan.bestTimeToVisit}</p>
-          </div>
+        {/* Notes (if present) */}
+        {activity.notes && (
+          <>
+            <Separator />
+            <div className="text-sm text-muted-foreground prose prose-sm max-w-none prose-p:my-1">
+              <ReactMarkdown>{activity.notes}</ReactMarkdown>
+            </div>
+          </>
+        )}
 
-          <div className="sm:col-span-2 bg-accent/5 p-4 sm:p-6 rounded-lg">
-            <h3 className="text-lg sm:text-xl font-bold text-primary mb-3 flex items-center gap-2">
-              <Info className="h-5 w-5" />
-              Travel Tips
-            </h3>
-            <ul className="space-y-2">
-              {itinerary.plan.travelTips.map((tip, index) => (
-                <li key={index} className="text-sm sm:text-base flex items-start gap-2 prose prose-sm max-w-none">
-                  <span className="text-primary pt-1">•</span>
-                  <ReactMarkdown>{tip}</ReactMarkdown>
-                </li>
-              ))}
-            </ul>
-          </div>
+        {/* Booking Info (if present) */}
+        {activity.bookingInfo && (
+          <>
+            <Separator />
+            <div className="text-sm space-y-1">
+              <p className="text-muted-foreground"><span className="font-medium text-foreground">Availability:</span> {activity.bookingInfo.availability}</p>
+              <p className="text-muted-foreground"><span className="font-medium text-foreground">Price:</span> {activity.bookingInfo.price}</p>
+              {/* {activity.bookingInfo.bookingUrl && ( // Remove Book Activity button
+                <a
+                  href={activity.bookingInfo.bookingUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 mt-2 px-3 py-1.5 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors text-xs font-medium"
+                >
+                  Book Activity
+                  <ChevronRight className="h-3 w-3" />
+                </a>
+              )} */}
+            </div>
+          </> // End Booking Info Fragment
+        )}
+
+        {/* "Know More" Button and Display Area - Moved outside Booking Info check */}
+        <Separator />
+        <div className="pt-2">
+           <Button
+             variant="outline"
+             size="sm"
+             onClick={handleKnowMoreClick} // Use the fetch handler
+             disabled={knowMoreLoading}
+             className="text-xs"
+           >
+             {knowMoreLoading ? <Loader2 className="mr-2 h-3 w-3 animate-spin" /> : null}
+             Know More
+           </Button>
+           {knowMoreLoading && <p className="text-xs text-muted-foreground mt-2">Loading details...</p>}
+           {knowMoreError && <p className="text-xs text-red-600 mt-2">Error: {knowMoreError}</p>}
+           {knowMoreData && (
+             <div className="mt-2 text-sm text-muted-foreground prose prose-sm max-w-none prose-p:my-1 border-t pt-2"><ReactMarkdown>{knowMoreData}</ReactMarkdown></div>
+           )}
+        </div>
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+
+// --- Daily Plan Section Component ---
+function DailyPlanSection({ dailyPlans }: DailyPlanSectionProps) {
+  // State to manage open/closed status for each day's collapsible
+  // Initialize all days as closed (false)
+  const [openStates, setOpenStates] = useState<Record<number, boolean>>(
+    dailyPlans.reduce((acc, day) => ({ ...acc, [day.day]: false }), {})
+  );
+
+  const toggleDay = (dayNumber: number) => {
+    setOpenStates(prev => ({ ...prev, [dayNumber]: !prev[dayNumber] }));
+  };
+
+  return (
+    <>
+      {dailyPlans.map((day) => (
+        <section key={day.day} id={`day-${day.day}`} className="scroll-mt-24">
+           <Collapsible open={openStates[day.day]} onOpenChange={() => toggleDay(day.day)}>
+             {/* Day Header as Trigger */}
+             <CollapsibleTrigger className="flex justify-between items-center w-full text-left gap-3 mb-2 p-2 rounded-md hover:bg-muted transition-colors group">
+               <div className="flex items-center gap-3">
+                 <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-primary/50 bg-primary/10 text-primary">
+                    <CalendarDays className="h-5 w-5" />
+                 </span>
+                 <h2 className="text-xl font-bold text-foreground">Day {day.day}</h2>
+               </div>
+               <ChevronDown className={`h-5 w-5 text-muted-foreground transition-transform duration-200 ${openStates[day.day] ? 'rotate-180' : ''} group-hover:text-foreground`} />
+             </CollapsibleTrigger>
+             {/* Timeline Container within Collapsible Content */}
+             <CollapsibleContent className="data-[state=open]:animate-collapsible-down data-[state=closed]:animate-collapsible-up overflow-hidden">
+               <div className="space-y-6 relative pl-5 border-l-2 border-border ml-4 pt-4 pb-2"> {/* Added padding top/bottom */}
+                 {day.activities.map((activity, actIndex) => (
+                   <div key={actIndex} className="relative">
+                     {/* Timeline Dot */}
+                     <div className="absolute -left-[23px] top-1 h-4 w-4 rounded-full border-4 border-background bg-primary"></div>
+                     <ActivityCard activity={activity} />
+                   </div>
+                 ))}
+               </div>
+             </CollapsibleContent>
+           </Collapsible>
+        </section>
+      ))}
+    </>
+  );
+}
+
+// --- Travel Tips Section Component ---
+function TravelTipsSection({ travelTips, estimatedCost, bestTime }: TravelTipsSectionProps) {
+  if (!travelTips && !estimatedCost && !bestTime) return null;
+
+  return (
+    <section id="tips" className="scroll-mt-24 space-y-6">
+       {/* Section Header */}
+       <div className="flex items-center gap-3 mb-4">
+         <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-primary/50 bg-primary/10 text-primary">
+            <Info className="h-5 w-5" />
+         </span>
+         <h2 className="text-xl font-bold text-foreground">Trip Information & Tips</h2>
+       </div>
+       
+       {/* Info Cards */}
+       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+         {estimatedCost && (
+           <Card className="bg-card shadow-sm">
+             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+               <CardTitle className="text-sm font-medium">Estimated Total Cost</CardTitle>
+               <DollarSign className="h-4 w-4 text-muted-foreground" />
+             </CardHeader>
+             <CardContent>
+               <div className="text-xl font-semibold">{estimatedCost}</div> {/* Reduced font size */}
+             </CardContent>
+           </Card>
+         )}
+         {bestTime && (
+           <Card className="bg-card shadow-sm">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+               <CardTitle className="text-sm font-medium">Best Time to Visit</CardTitle>
+               <Calendar className="h-4 w-4 text-muted-foreground" />
+             </CardHeader>
+             <CardContent>
+               <div className="text-md font-medium">{bestTime}</div>
+             </CardContent>
+           </Card>
+         )}
+       </div>
+
+       {/* Tips Card */}
+       {travelTips && travelTips.length > 0 && (
+         <Card className="bg-card shadow-sm">
+            <CardHeader>
+               <CardTitle className="flex items-center gap-2 text-md">
+                  <Lightbulb className="h-4 w-4 text-primary"/> Travel Tips
+               </CardTitle>
+            </CardHeader>
+           <CardContent className="text-sm">
+             <ul className="space-y-2 list-disc pl-5 text-muted-foreground prose prose-sm max-w-none prose-p:my-1">
+               {travelTips.map((tip, index) => (
+                 <li key={index}>
+                   <ReactMarkdown>{tip}</ReactMarkdown>
+                 </li>
+               ))}
+             </ul>
+           </CardContent>
+         </Card>
+       )}
+    </section>
+  );
+}
+
+
+// --- Main Export (Now acts as a container for sections) ---
+interface ItineraryContentProps {
+  itinerary: Itinerary;
+}
+
+export default function ItineraryContent({ itinerary }: ItineraryContentProps) {
+  return (
+    <div className="space-y-12"> {/* Add spacing between sections */}
+      <AccommodationSection accommodation={itinerary.plan.accommodation} />
+      <DailyPlanSection dailyPlans={itinerary.plan.dailyPlans} />
+      <TravelTipsSection 
+        travelTips={itinerary.plan.travelTips} 
+        estimatedCost={itinerary.plan.estimatedTotalCost}
+        bestTime={itinerary.plan.bestTimeToVisit}
+      />
+    </div>
   );
 }

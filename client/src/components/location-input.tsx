@@ -14,9 +14,11 @@ interface LocationInputProps {
   onChange: (value: string) => void;
   label: string;
   placeholder: string;
+  disabled?: boolean; // Add disabled prop
+  hideAutoLocateButton?: boolean; // Add prop to hide button
 }
 
-export default function LocationInput({ value, onChange, label, placeholder }: LocationInputProps) {
+export default function LocationInput({ value, onChange, label, placeholder, disabled = false, hideAutoLocateButton = false }: LocationInputProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [isSuggestionsVisible, setIsSuggestionsVisible] = useState(false);
@@ -132,15 +134,20 @@ export default function LocationInput({ value, onChange, label, placeholder }: L
       }
 
       if (data.address) {
-        const locationName =
-          data.address.city ||
-          data.address.town ||
-          data.address.village ||
-          data.address.suburb ||
-          data.address.county ||
-          data.address.state_district ||
-          data.address.state ||
-          data.display_name;
+        // Attempt to construct a more precise location name
+        const address = data.address;
+        const preciseParts = [
+          address.road,
+          address.neighbourhood,
+          address.suburb,
+          address.village || address.town || address.city,
+          address.state,
+          address.country
+        ].filter(Boolean); // Remove null/undefined parts
+
+        let locationName = preciseParts.length > 1 ? preciseParts.join(', ') :
+          // Fallback to broader categories if precise parts are insufficient
+          address.city || address.town || address.village || address.suburb || address.county || address.state_district || address.state || data.display_name;
 
         if (locationName) {
           onChange(locationName);
@@ -217,14 +224,15 @@ export default function LocationInput({ value, onChange, label, placeholder }: L
             setIsSuggestionsVisible(true);
           }}
           className="h-12 flex-1 bg-white/50 backdrop-blur-sm border border-gray-300 rounded-md focus:border-blue-500 transition-colors"
+          disabled={disabled} // Pass disabled prop
         />
-        <Button
+        {!hideAutoLocateButton && ( // Conditionally render button
+          <Button
           type="button"
           variant="outline"
           size="icon"
           onClick={handleAutoLocate}
-          disabled={isLoading}
-          className="h-12 w-12 flex-shrink-0 rounded-md border border-gray-300 hover:bg-gray-100 transition-colors"
+          className="h-12 w-12 flex-shrink-0 rounded-md border border-gray-300 hover:bg-gray-100 transition-colors" disabled={disabled || isLoading} // Combined disabled prop
           aria-label="Auto-detect location"
         >
           {isLoading ? (
@@ -233,6 +241,7 @@ export default function LocationInput({ value, onChange, label, placeholder }: L
             <MapPin className="h-5 w-5" />
           )}
         </Button>
+        )}
       </div>
       {/* Suggestion dropdown */}
       {isSuggestionsVisible && suggestions.length > 0 && (

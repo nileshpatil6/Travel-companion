@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { generateItinerary } from "./lib/gemini";
+import { generateItinerary, generatePlaceDetails } from "./lib/gemini"; // Import new function
 import { searchSchema } from "@shared/schema";
 import { nanoid } from "nanoid";
 
@@ -49,5 +49,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   const httpServer = createServer(app);
+  // --- New Endpoint for Place Details ---
+  app.post("/api/place-details", async (req, res) => {
+    try {
+      const { placeQuery } = req.body; // Expecting { "placeQuery": "Place Name, Location..." }
+      if (!placeQuery || typeof placeQuery !== 'string') {
+        return res.status(400).json({ message: "Missing or invalid 'placeQuery' in request body" });
+      }
+
+      const details = await generatePlaceDetails(placeQuery);
+      res.json({ details }); // Send back as { "details": "..." }
+
+    } catch (error) {
+      console.error("Place details endpoint error:", error);
+      if (error instanceof Error) {
+        res.status(500).json({ message: error.message });
+      } else {
+        res.status(500).json({ message: "Internal server error fetching place details" });
+      }
+    }
+  });
+
   return httpServer;
 }

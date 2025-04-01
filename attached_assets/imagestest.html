@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google Place Image Finder</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background-color: #f8f9fa;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 20px auto;
+            background-color: #fff;
+            padding: 30px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            border-radius: 8px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #343a40;
+            margin-bottom: 30px;
+        }
+
+        .search-form {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 30px;
+            gap: 10px;
+        }
+
+        #searchInput {
+            padding: 12px 15px;
+            font-size: 16px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            flex-grow: 1;
+            max-width: 500px;
+        }
+
+        #searchButton {
+            padding: 12px 20px;
+            font-size: 16px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        #searchButton:hover:not(:disabled) {
+            background-color: #0056b3;
+        }
+        #searchButton:disabled {
+            background-color: #6c757d;
+            cursor: not-allowed;
+        }
+
+        #statusMessage {
+            text-align: center;
+            margin-top: 20px;
+            font-style: italic;
+            color: #555;
+            min-height: 20px; /* Reserve space */
+        }
+
+        .image-results {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); /* Responsive grid */
+            gap: 25px; /* Space between images */
+            margin-top: 30px;
+        }
+
+        .photo-container {
+            background-color: #fff;
+            border-radius: 5px;
+            overflow: hidden; /* Ensure image corners are rounded if image itself isn't */
+            box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+             transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .photo-container:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+        }
+
+
+        .photo-container img {
+            width: 100%;
+            height: 220px;
+            object-fit: cover;
+            display: block; /* Remove bottom space */
+            background-color: #eee; /* Placeholder bg color */
+        }
+
+        .photo-attribution {
+            padding: 8px 12px;
+            font-size: 11px;
+            color: #6c757d;
+            background-color: #f8f9fa;
+            border-top: 1px solid #e9ecef;
+            word-wrap: break-word; /* Handle long attributions */
+        }
+
+        .photo-attribution a {
+            color: #007bff;
+            text-decoration: none;
+        }
+         .photo-attribution a:hover {
+            text-decoration: underline;
+        }
+
+        /* IMPORTANT: A hidden div is needed for the PlacesService constructor */
+        #map {
+            height: 1px;
+            width: 1px;
+            position: absolute;
+            top: -10px;
+            left: -10px;
+            visibility: hidden;
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 40px;
+            font-size: 12px;
+            color: #777;
+         }
+         footer a {
+            color: #007bff;
+            text-decoration: none;
+         }
+         footer a:hover {
+             text-decoration: underline;
+         }
+
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Google Place Image Finder</h1>
+
+        <form id="searchForm" class="search-form">
+            <input type="text" id="searchInput" placeholder="Enter a place name (e.g., Eiffel Tower, Tokyo)" required>
+            <button type="submit" id="searchButton">Search</button>
+        </form>
+
+        <div id="statusMessage">Enter a place and click Search.</div>
+
+        <!-- Hidden map div required by PlacesService -->
+        <div id="map"></div>
+
+        <div id="imageResults" class="image-results">
+            <!-- Images and attributions will be loaded here -->
+        </div>
+
+        <footer>
+             Place data and images provided by Google. See image attributions below each photo.
+        </footer>
+    </div>
+
+    <!-- Load Google Maps JavaScript API -->
+    <!-- IMPORTANT: Replace YOUR_GOOGLE_MAPS_API_KEY -->
+    <script>
+        const apiKey = 'AIzaSyAp2Dql02fLi7sbKKa6aa-e1ZpGgrLNFfs'; // <-- REPLACE THIS!
+        const googleApiUrl = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places&callback=initApp`;
+
+        // Check if API key is the placeholder BEFORE attempting to load the script
+        if (apiKey === 'YOUR_GOOGLE_MAPS_API_KEY' || !apiKey) {
+             const statusDiv = document.getElementById('statusMessage');
+             statusDiv.innerHTML = `<strong style="color: red;">Error: Please replace 'YOUR_GOOGLE_MAPS_API_KEY' in the script tag with your actual Google Maps API Key.</strong> You need to enable the 'Places API' in your Google Cloud project and restrict the key.`;
+             document.getElementById('searchButton').disabled = true;
+             document.getElementById('searchInput').disabled = true;
+        } else {
+            // Dynamically create and load the script tag
+            const script = document.createElement('script');
+            script.src = googleApiUrl;
+            script.async = true;
+            script.defer = true;
+            document.head.appendChild(script);
+            // Handle potential script loading errors (though callback handles primary init)
+            script.onerror = () => {
+                const statusDiv = document.getElementById('statusMessage');
+                statusDiv.innerHTML = `<strong style="color: red;">Error: Failed to load the Google Maps script. Check your API key, network connection, and API restrictions in Google Cloud Console.</strong>`;
+                document.getElementById('searchButton').disabled = true;
+                document.getElementById('searchInput').disabled = true;
+            };
+        }
+    </script>
+
+    <script>
+        let placesService; // Will be initialized by the callback
+        const searchForm = document.getElementById('searchForm');
+        const searchInput = document.getElementById('searchInput');
+        const imageResultsDiv = document.getElementById('imageResults');
+        const statusMessageDiv = document.getElementById('statusMessage');
+        const searchButton = document.getElementById('searchButton');
+        const mapDiv = document.getElementById('map'); // Reference to hidden map div
+
+        // This function is called by the Google Maps API script when it's loaded (due to `&callback=initApp`)
+        function initApp() {
+            console.log("Google Maps API loaded.");
+            // PlacesService needs a map instance or an HTMLDivElement
+            // Using a hidden div is a common workaround if you don't need to display a map
+            try {
+                 placesService = new google.maps.places.PlacesService(mapDiv);
+                 console.log("PlacesService initialized.");
+                 // Enable search now that the service is ready (if API key was provided)
+                 if (apiKey !== 'AIzaSyAp2Dql02fLi7sbKKa6aa-e1ZpGgrLNFfs' && apiKey) {
+                    searchButton.disabled = false;
+                    searchInput.disabled = false;
+                    statusMessageDiv.textContent = 'Ready. Enter a place name.';
+                 }
+            } catch (error) {
+                console.error("Error initializing PlacesService:", error);
+                statusMessageDiv.innerHTML = `<strong style="color: red;">Error initializing Google Places Service. Check console for details.</strong>`;
+                searchButton.disabled = true;
+                searchInput.disabled = true;
+            }
+        }
+
+        searchForm.addEventListener('submit', (event) => {
+            event.preventDefault(); // Prevent default form submission
+
+            const query = searchInput.value.trim();
+            if (!query) {
+                statusMessageDiv.textContent = 'Please enter a place name.';
+                return;
+            }
+
+            // Check if PlacesService was initialized (it might not be if API key was wrong or loading failed)
+            if (!placesService) {
+                 statusMessageDiv.innerHTML = `<strong style="color: red;">Error: Places service not available. Check API key and script loading.</strong>`;
+                 return;
+            }
+
+            // Clear previous results and show loading message
+            imageResultsDiv.innerHTML = '';
+            statusMessageDiv.textContent = `Searching for "${query}"...`;
+            searchButton.disabled = true; // Disable button during search
+            searchInput.disabled = true;
+
+
+            // 1. Use Text Search to find the place ID
+            const request = {
+                query: query,
+                fields: ['place_id', 'name'] // Request only needed fields initially
+            };
+
+            placesService.textSearch(request, (results, status) => {
+                if (status === google.maps.places.PlacesServiceStatus.OK && results && results.length > 0) {
+                    const place = results[0]; // Assume the first result is the best match
+                    const placeId = place.place_id;
+                    const placeName = place.name; // Get the name Google found
+                    statusMessageDiv.textContent = `Found "${placeName}". Fetching photos...`;
+                    fetchPlacePhotos(placeId, placeName);
+                } else if (status === google.maps.places.PlacesServiceStatus.ZERO_RESULTS) {
+                    statusMessageDiv.textContent = `No place found matching "${query}". Try a more specific name.`;
+                    enableSearchControls();
+                }
+                 else {
+                    console.error("Places text search failed with status:", status);
+                    statusMessageDiv.textContent = `Error searching for place: ${status}. Please try again.`;
+                    enableSearchControls();
+                }
+            });
+        });
+
+        function fetchPlacePhotos(placeId, placeName) {
+            // 2. Use Place Details to get photos using the place ID
+            const detailsRequest = {
+                placeId: placeId,
+                fields: ['photos'] // Specifically request the photos array
+            };
+
+            placesService.getDetails(detailsRequest, (placeDetails, status) => {
+                if (status === google.maps.places.PlacesServiceStatus.OK && placeDetails && placeDetails.photos && placeDetails.photos.length > 0) {
+                    statusMessageDiv.textContent = `Displaying ${placeDetails.photos.length} photos for "${placeName}".`;
+                    displayImages(placeDetails.photos, placeName);
+                } else if (status === google.maps.places.PlacesServiceStatus.OK) {
+                    statusMessageDiv.textContent = `No photos found for "${placeName}" in Google's database.`;
+                } else {
+                    console.error("Places details request failed with status:", status);
+                    statusMessageDiv.textContent = `Error fetching photos: ${status}.`;
+                }
+                enableSearchControls(); // Re-enable controls after details fetch attempt
+            });
+        }
+
+        function displayImages(photos, placeName) {
+            imageResultsDiv.innerHTML = ''; // Clear again just in case
+
+            photos.forEach(photo => {
+                // Get URL for the photo - specifying max width for efficiency
+                const photoUrl = photo.getUrl({ maxWidth: 500 }); // Adjust maxWidth as needed
+
+                // Create elements
+                const container = document.createElement('div');
+                container.classList.add('photo-container');
+
+                const img = document.createElement('img');
+                img.src = photoUrl;
+                img.alt = `Photo of ${placeName}`;
+                img.loading = 'lazy'; // Lazy load images
+
+                const attributionDiv = document.createElement('div');
+                attributionDiv.classList.add('photo-attribution');
+                // IMPORTANT: Google requires displaying attributions
+                // photo.html_attributions usually contains an array of HTML strings
+                attributionDiv.innerHTML = photo.html_attributions.join(' | ') || 'Photo provided by Google';
+
+                // Assemble
+                container.appendChild(img);
+                container.appendChild(attributionDiv);
+                imageResultsDiv.appendChild(container);
+            });
+        }
+
+        function enableSearchControls() {
+            searchButton.disabled = false;
+            searchInput.disabled = false;
+            searchInput.focus();
+        }
+
+    </script>
+
+</body>
+</html>
